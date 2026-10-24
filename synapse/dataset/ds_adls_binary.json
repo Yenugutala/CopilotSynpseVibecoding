@@ -12,8 +12,7 @@
                 "type": "string"
             },
             "folder": {
-                "type": "string",
-                "defaultValue": ""
+                "type": "string"
             },
             "file": {
                 "type": "string"

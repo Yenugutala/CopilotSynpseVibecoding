@@ -12,7 +12,8 @@ description: Build and ship the Synapse pipeline (landing -> raw -> curated) fro
 |---|---|
 | `synapse/linkedService/ls_adls.json` | ADLS Gen2 `https://<account>.dfs.core.windows.net/` with managed identity |
 | `synapse/linkedService/ls_serverless_sql.json` | Serverless endpoint, `DBName` parameter, managed identity |
-| `synapse/dataset/ds_adls_binary.json` | Any file by `container` / `folder` / `file` |
+| `synapse/dataset/ds_adls_binary.json` | Any file by `container` / `folder` / `file` (folder must be non-empty) |
+| `synapse/dataset/ds_adls_binary_root.json` | A file at the container root by `container` / `file`. Used for `landing/` sources, because Synapse rejects an empty folder value. |
 | `synapse/pipeline/pl_<use_case>.json` | The pipeline |
 | `synapse/integrationRuntime/AutoResolveIntegrationRuntime.json` | Default Azure IR |
 

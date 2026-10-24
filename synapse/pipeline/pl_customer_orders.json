@@ -32,7 +32,7 @@
                 },
                 "inputs": [
                     {
-                        "referenceName": "ds_adls_binary",
+                        "referenceName": "ds_adls_binary_root",
                         "type": "DatasetReference",
                         "parameters": {
                             "container": "landing",
@@ -83,7 +83,7 @@
                 },
                 "inputs": [
                     {
-                        "referenceName": "ds_adls_binary",
+                        "referenceName": "ds_adls_binary_root",
                         "type": "DatasetReference",
                         "parameters": {
                             "container": "landing",
