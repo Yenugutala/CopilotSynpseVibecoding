@@ -36,7 +36,6 @@
                         "type": "DatasetReference",
                         "parameters": {
                             "container": "landing",
-                            "folder": "",
                             "file": "customers.csv"
                         }
                     }
@@ -88,7 +87,6 @@
                         "type": "DatasetReference",
                         "parameters": {
                             "container": "landing",
-                            "folder": "",
                             "file": "orders.csv"
                         }
                     }
