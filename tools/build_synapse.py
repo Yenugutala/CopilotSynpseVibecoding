@@ -414,6 +414,12 @@ def render(config, sources):
     pl_name, pl_body = pipeline(config, sources)
     files["pipeline/{}.json".format(pl_name)] = pl_body
     files["integrationRuntime/AutoResolveIntegrationRuntime.json"] = integration_runtime()
+    # Built-in credential Synapse creates for the workspace managed identity. It must be in Git,
+    # otherwise "Overwrite live mode" / Publish deletes it from the live workspace.
+    files["credential/WorkspaceSystemIdentity.json"] = {
+        "name": "WorkspaceSystemIdentity",
+        "properties": {"type": "ManagedIdentity"},
+    }
     return {path: json.dumps(body, indent=4, ensure_ascii=False) + "\n" for path, body in files.items()}
 
 
