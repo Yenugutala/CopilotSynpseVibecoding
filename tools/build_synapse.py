@@ -22,13 +22,31 @@ SQL conventions handled here:
                                -> literal values from config/environment.yaml
 """
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-import yaml
-
 ROOT = Path(__file__).resolve().parent.parent
+
+try:
+    import yaml
+except ImportError:
+    # Started with an interpreter that lacks PyYAML (for example Homebrew python3).
+    # Re-run inside the project's .venv, creating it on first use.
+    venv_python = ROOT / ".venv" / "bin" / "python3"
+    if os.environ.get("BUILD_SYNAPSE_BOOTSTRAPPED"):
+        sys.exit("PyYAML is still missing in .venv. Run: ./tools/build.sh validate")
+    if not venv_python.exists():
+        print("Creating project environment in .venv (first run only)...", flush=True)
+        subprocess.check_call([sys.executable, "-m", "venv", str(ROOT / ".venv")])
+    if subprocess.call([str(venv_python), "-c", "import yaml"], stderr=subprocess.DEVNULL) != 0:
+        print("Installing requirements.txt into .venv (first run only)...", flush=True)
+        subprocess.check_call([str(venv_python), "-m", "pip", "install", "--quiet",
+                               "--disable-pip-version-check", "-r", str(ROOT / "requirements.txt")])
+    os.environ["BUILD_SYNAPSE_BOOTSTRAPPED"] = "1"
+    os.execv(str(venv_python), [str(venv_python), str(Path(__file__).resolve())] + sys.argv[1:])
 CONFIG_FILE = ROOT / "config" / "environment.yaml"
 SOURCES_DIR = ROOT / "specs" / "sources"
 MODELS_DIR = ROOT / "specs" / "models"
