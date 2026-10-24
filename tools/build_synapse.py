@@ -310,7 +310,9 @@ def copy_activity(spec, config):
         },
         "inputs": [{
             "referenceName": "ds_adls_binary", "type": "DatasetReference",
-            "parameters": {"container": containers["landing"], "folder": "", "file": source_file},
+            # no "folder": files sit at the container root, and Synapse rejects an empty
+            # parameter value ("No value provided"), so the dataset default ("") applies
+            "parameters": {"container": containers["landing"], "file": source_file},
         }],
         "outputs": [{
             "referenceName": "ds_adls_binary", "type": "DatasetReference",
@@ -393,6 +395,17 @@ def render(config, sources):
     return {path: json.dumps(body, indent=4, ensure_ascii=False) + "\n" for path, body in files.items()}
 
 
+def same_json(path, content):
+    """True when the file holds the same JSON as content. Formatting is ignored, because
+    Synapse Studio re-saves files with its own indentation when it commits to Git."""
+    if not path.exists():
+        return False
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) == json.loads(content)
+    except ValueError:
+        return False
+
+
 # ---------------------------------------------------------------------- main
 
 def main(argv):
@@ -415,8 +428,7 @@ def main(argv):
 
     rendered = render(config, sources)
     if command == "check":
-        stale = [p for p, content in rendered.items()
-                 if not (OUT_DIR / p).exists() or (OUT_DIR / p).read_text(encoding="utf-8") != content]
+        stale = [p for p, content in rendered.items() if not same_json(OUT_DIR / p, content)]
         if stale:
             print("synapse/ is out of date. Run: ./tools/build.sh build")
             for p in stale:
@@ -427,6 +439,9 @@ def main(argv):
 
     for path, content in rendered.items():
         target = OUT_DIR / path
+        if same_json(target, content):
+            print("unchanged synapse/" + path)
+            continue
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
         print("wrote synapse/" + path)
