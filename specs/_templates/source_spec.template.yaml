@@ -1,0 +1,30 @@
+# TEMPLATE for specs/sources/<table>.yaml. Copy it, rename it, and replace every <...> value.
+# This file is not read by the build (only specs/sources/*.yaml are).
+table: <table_name>                  # snake_case, same as the file name without .yaml
+description: <one line: what this data is and where it comes from>
+source_file: <file_name>.csv         # exact name expected in the landing container
+format:
+  delimiter: ","
+  header: true
+  encoding: UTF-8
+business_key: [<column_name>]        # column(s) that uniquely identify a row
+
+columns:                             # same order as the CSV header
+  - name: <column_name>              # snake_case
+    type: <INT | BIGINT | SMALLINT | BIT | DATE | DATETIME2 | VARCHAR(n) | DECIMAL(p,s)>
+    nullable: <true | false>
+    description: <one line>
+
+dq_rules:                            # one entry per check; action reject -> rejects table, warn -> flagged only
+  - name: <column_name>_not_null
+    column: <column_name>
+    check: not_null
+    action: reject
+  # Other checks and their parameters:
+  #   check: regex           pattern: "<T-SQL LIKE pattern>"
+  #   check: valid_type      (TRY_CAST to the column type must succeed)
+  #   check: max_length      value: <n>
+  #   check: min_value       value: <n>
+  #   check: allowed_values  values: [<A>, <B>]
+  #   check: references      ref_table: <other_table>  ref_column: <its key>
+  #   check: unique

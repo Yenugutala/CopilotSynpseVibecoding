@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "ms-mssql.mssql",
+        "redhat.vscode-yaml",
+        "bierner.markdown-mermaid",
+        "ms-python.python"
+    ]
+}

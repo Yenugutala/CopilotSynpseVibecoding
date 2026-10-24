@@ -1,0 +1,6 @@
+# Reviewers are requested automatically for these paths.
+# Add teammates or a team (for example @org/data-engineering) as the team grows.
+*                     @Yenugutala
+/specs/               @Yenugutala
+/.github/             @Yenugutala
+/tools/               @Yenugutala

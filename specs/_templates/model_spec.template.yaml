@@ -1,0 +1,14 @@
+# TEMPLATE for specs/models/<model>.yaml (gold layer). Copy it, rename it, and replace every <...> value.
+model: <model_name>                  # snake_case, no dim_/fact_ prefix
+layer: gold
+description: <one line: who uses this and for what>
+grain: one row per <column_or_combination>
+sources: [silver.<table_a>, silver.<table_b>]
+join: silver.<table_a> <LEFT | INNER> JOIN silver.<table_b> ON <key>
+filters:                             # optional
+  - <table>.<column> <condition>
+
+columns:                             # output columns, in order
+  - name: <output_column>
+    expression: <table>.<column> | <aggregate or calculation>
+    description: <one line>

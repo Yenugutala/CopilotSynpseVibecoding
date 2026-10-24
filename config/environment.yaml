@@ -1,0 +1,22 @@
+# Environment settings used by tools/build_synapse.py and by Copilot when generating code.
+# No secrets here — every connection uses the Synapse workspace managed identity.
+# A teammate with their own Azure environment copies this file and changes the values.
+
+use_case: customer_orders            # drives the pipeline name: pl_<use_case>
+
+azure:
+  region: centralus                  # Synapse region (storage is in eastus — fine for demo volumes)
+  resource_group: rg-copilot-demo
+
+storage:
+  account: stcopilotdemokk1          # ADLS Gen2 (hierarchical namespace enabled)
+  containers:
+    landing: landing                 # you drop source CSVs here (manual upload)
+    raw: raw                         # pipeline copies landing -> raw/<table>/ingest_date=YYYY-MM-DD/
+    curated: curated                 # pipeline writes Parquet: curated/silver/<table>/run_id=<id>/
+
+synapse:
+  workspace: syn-copilot-demo-kk     # TODO: confirm the final workspace name after deployment
+  serverless_endpoint: syn-copilot-demo-kk-ondemand.sql.azuresynapse.net
+  database: demo_lakehouse           # serverless SQL database created by sql/00_setup
+  git_root_folder: /synapse          # Synapse Studio -> Manage -> Git configuration -> Root folder
