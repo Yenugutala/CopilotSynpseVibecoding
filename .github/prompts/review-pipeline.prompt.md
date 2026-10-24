@@ -16,7 +16,7 @@ Check every item and report each one as PASS or FAIL, with the file and line:
 6. Every CETAS `LOCATION` contains `run_id={{run_id}}`, and is preceded by a guarded `DROP EXTERNAL TABLE`.
 7. `GO` separates every `CREATE OR ALTER VIEW` and every CETAS.
 8. File numbering builds referenced tables first.
-9. `python3 tools/build_synapse.py check` passes. If you can't run it, say so.
+9. `./tools/build.sh check` passes. If you can't run it, say so.
 10. Gold views list explicit columns (no `SELECT *`), and LEFT JOIN filters are in the `ON` clause.
 
 End with a short list of fixes in priority order.

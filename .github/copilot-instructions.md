@@ -10,7 +10,7 @@ specs/sources/*.yaml  specs/models/*.yaml      <- humans write these (source of 
         │  you generate
         ▼
 sql/00_setup  sql/bronze  sql/silver  sql/gold <- you write plain T-SQL here
-        │  python3 tools/build_synapse.py build
+        │  ./tools/build.sh build
         ▼
 synapse/pipeline  linkedService  dataset       <- generated JSON; Synapse Studio reads it from Git
         │  PR -> merge to main -> Publish in Synapse Studio -> Trigger now
@@ -21,12 +21,13 @@ landing/ ──copy──> raw/ ──bronze views──> silver CETAS (curated/
 ## Non-negotiable rules
 1. **Specs are the only input.** Every table, column, type, key and DQ rule comes from `specs/`. If a spec is missing something, stop and ask. Never invent columns.
 2. **Serverless SQL only.** The target is the Built-in serverless pool. No `MERGE`, `UPDATE`, `DELETE`, `INSERT`, or tables stored in the pool. Use `OPENROWSET` views, `CREATE EXTERNAL TABLE AS SELECT` (CETAS) and views. No Spark or Dedicated SQL pools (cost).
-3. **Never hand-edit `synapse/**/*.json`.** Change SQL or specs, then run `python3 tools/build_synapse.py build`. CI fails if the JSON is out of date.
+3. **Never hand-edit `synapse/**/*.json`.** Change SQL or specs, then run `./tools/build.sh build`. CI fails if the JSON is out of date.
 4. **Every script is safe to re-run.** Guard creates with `IF NOT EXISTS`, use `CREATE OR ALTER VIEW`, drop external tables before CETAS, and write CETAS to `run_id={{run_id}}` folders.
 5. **No secrets anywhere.** No keys, passwords, SAS tokens or connection strings with credentials. Storage and SQL access use the Synapse workspace managed identity. Environment values live in `config/environment.yaml` and are referenced with `{{placeholders}}`.
 6. **Never commit to `main`.** Work on `feat/<use-case>-<short-desc>`, push, and open a PR. A human reviews and merges.
 7. **Do not upload, download or delete data** in Azure Storage, and do not run the pipeline. Humans upload to `landing/` and click *Trigger now*.
-8. **Only change what was asked.** When generating for some tables, don't rewrite or renumber the SQL files of other tables. Update an existing table's file in place and keep its number.
+8. **Run Python only through `./tools/build.sh`.** Never run `pip`, never install packages, and never call `python3 tools/build_synapse.py` directly. If `./tools/build.sh` fails to start, show the error and stop.
+9. **Only change what was asked.** When generating for some tables, don't rewrite or renumber the SQL files of other tables. Update an existing table's file in place and keep its number.
 
 ## Layers and naming
 | Layer | Object | Location / name | Rule |
@@ -50,6 +51,6 @@ landing/ ──copy──> raw/ ──bronze views──> silver CETAS (curated/
 - Path-specific rules: `.github/instructions/*.instructions.md`
 
 ## Definition of done
-- `python3 tools/build_synapse.py validate` and `python3 tools/build_synapse.py check` both pass.
+- `./tools/build.sh validate` and `./tools/build.sh check` both pass.
 - Every spec table has bronze, silver and rejects SQL. Every model spec has a gold view.
 - Changes are on a feature branch with a PR that uses the template and lists what to upload to `landing/`.

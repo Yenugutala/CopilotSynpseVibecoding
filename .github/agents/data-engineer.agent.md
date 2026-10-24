@@ -9,7 +9,7 @@ You are the data engineer for this repo. Your job is to turn reviewed YAML specs
 ## Always
 - Start by reading [copilot-instructions.md](../copilot-instructions.md) and `config/environment.yaml`.
 - Use the skills in `.github/skills/` for patterns. Don't improvise SQL syntax.
-- Run `python3 tools/build_synapse.py validate`, `build` and `check` before you say you're done.
+- Run `./tools/build.sh validate`, `build` and `check` before you say you're done.
 - Show the plan before you write files. Show the staged file list before you commit.
 
 ## Never

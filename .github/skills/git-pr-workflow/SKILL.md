@@ -14,7 +14,7 @@ description: Create a feature branch, commit generated code, push to GitHub and 
 ## Procedure (run in the VS Code terminal)
 1. Make sure the build is clean:
    ```bash
-   python3 tools/build_synapse.py validate && python3 tools/build_synapse.py check
+   ./tools/build.sh validate && ./tools/build.sh check
    ```
 2. Create or switch to the branch:
    ```bash
@@ -46,4 +46,4 @@ description: Create a feature branch, commit generated code, push to GitHub and 
 ## If something goes wrong
 - Push rejected because `main` is protected: you are on `main`. Create a branch (step 2) and push again.
 - Authentication failed: ask the human to run `gh auth login`, or to sign in to GitHub in VS Code.
-- CI fails on `check`: run `python3 tools/build_synapse.py build`, commit the regenerated `synapse/` files, and push again.
+- CI fails on `check`: run `./tools/build.sh build`, commit the regenerated `synapse/` files, and push again.

@@ -6,7 +6,7 @@ description: Build and ship the Synapse pipeline (landing -> raw -> curated) fro
 # Synapse pipeline
 
 ## What gets generated
-`python3 tools/build_synapse.py build` writes these files. Never edit them by hand.
+`./tools/build.sh build` writes these files. Never edit them by hand.
 
 | File | Purpose |
 |---|---|
@@ -28,9 +28,9 @@ copy_<table>_landing_to_raw   (one per specs/sources/*.yaml, run in parallel)
 - Script activities run one after another, in folder order and then file-name order.
 
 ## Procedure after SQL or spec changes
-1. `python3 tools/build_synapse.py validate`: fix every error it reports.
-2. `python3 tools/build_synapse.py build`
-3. `python3 tools/build_synapse.py check` should print `synapse/ is up to date.`
+1. `./tools/build.sh validate`: fix every error it reports.
+2. `./tools/build.sh build`
+3. `./tools/build.sh check` should print `synapse/ is up to date.`
 4. Review `git diff synapse/`. The changes should match the SQL you changed.
 5. Ship with the git-pr-workflow skill.
 

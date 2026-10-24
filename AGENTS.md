@@ -6,13 +6,13 @@ The full rules are in [.github/copilot-instructions.md](.github/copilot-instruct
 
 ## Summary
 - **Goal:** generate Azure Synapse **serverless SQL** + a Synapse **pipeline** from the YAML specs in `specs/`.
-- **Flow:** `specs/` → `sql/<layer>/*.sql` → `python3 tools/build_synapse.py build` → `synapse/` JSON → PR.
+- **Flow:** `specs/` → `sql/<layer>/*.sql` → `./tools/build.sh build` → `synapse/` JSON → PR.
 - **Never:** commit to `main`, hand-edit `synapse/**/*.json`, put secrets in code, touch data in storage, or use MERGE/UPDATE/DELETE/INSERT.
 - **Always:** re-runnable SQL, `{{placeholders}}` for environment values, snake_case names, `_`-prefixed metadata columns.
 
 ## Commands
 ```bash
-python3 tools/build_synapse.py validate   # specs + SQL conventions
-python3 tools/build_synapse.py build      # regenerate synapse/ JSON
-python3 tools/build_synapse.py check      # what CI runs
+./tools/build.sh validate   # specs + SQL conventions
+./tools/build.sh build      # regenerate synapse/ JSON
+./tools/build.sh check      # what CI runs
 ```

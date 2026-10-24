@@ -25,5 +25,5 @@ Required keys: `model`, `layer: gold`, `description`, `grain`, `sources`, `join`
 - Templates: `specs/_templates/source_spec.template.yaml` and `model_spec.template.yaml`.
 - To add a source, use `/add-new-source`. It drafts the spec from a CSV sample in `data/sample/` for a human to review.
 - To add a gold model, use `/add-new-model`. It drafts the spec from a plain-English requirement.
-- Run `python3 tools/build_synapse.py validate` after every spec change.
+- Run `./tools/build.sh validate` after every spec change.
 - Never put sample data values, personal data or secrets in a spec.

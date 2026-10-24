@@ -44,10 +44,9 @@ For a first-time setup, follow [docs/setup](docs/setup/) in order.
 
 ## Commands
 ```bash
-pip3 install pyyaml                        # once
-python3 tools/build_synapse.py validate    # check specs + SQL rules
-python3 tools/build_synapse.py build       # regenerate synapse/ from sql/
-python3 tools/build_synapse.py check       # CI check: synapse/ is in sync
+./tools/build.sh validate   # check specs + SQL rules (creates .venv on first run)
+./tools/build.sh build      # regenerate synapse/ from sql/
+./tools/build.sh check      # CI check: synapse/ is in sync
 ```
 
 ## Cost (demo scale)
