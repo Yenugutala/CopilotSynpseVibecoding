@@ -1,0 +1,16 @@
+{
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "chat.promptFiles": true,
+    "files.associations": {
+        "*.sql": "sql"
+    },
+    "files.exclude": {
+        "**/.DS_Store": true
+    },
+    "[yaml]": {
+        "editor.tabSize": 2
+    },
+    "[sql]": {
+        "editor.tabSize": 4
+    }
+}
