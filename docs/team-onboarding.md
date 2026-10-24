@@ -5,8 +5,8 @@
 - [ ] *Storage Blob Data Contributor* on `stcopilotdemokk1`, so you can upload to `landing` and query gold
 - [ ] VS Code installed in **Applications**, signed in to GitHub Copilot
 - [ ] Foundry model added in VS Code: [setup/02](setup/02-azure-ai-foundry-and-copilot.md) section 2.4
-- [ ] `brew install gh && gh auth login`, `pip3 install pyyaml`
-- [ ] Clone the repo, open it in VS Code, and run `python3 tools/build_synapse.py validate`
+- [ ] `brew install gh && gh auth login`
+- [ ] Clone the repo, open it in VS Code, and run `./tools/build.sh validate` (the first run sets up `.venv` automatically)
 
 ## What Copilot knows automatically
 | File | Loaded when |

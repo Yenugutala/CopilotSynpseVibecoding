@@ -16,7 +16,7 @@ storage:
     curated: curated                 # pipeline writes Parquet: curated/silver/<table>/run_id=<id>/
 
 synapse:
-  workspace: syn-copilot-demo-kk     # TODO: confirm the final workspace name after deployment
+  workspace: syn-copilot-demo-kk     # confirmed: Central US, rg-copilot-demo
   serverless_endpoint: syn-copilot-demo-kk-ondemand.sql.azuresynapse.net
   database: demo_lakehouse           # serverless SQL database created by sql/00_setup
   git_root_folder: /synapse          # Synapse Studio -> Manage -> Git configuration -> Root folder

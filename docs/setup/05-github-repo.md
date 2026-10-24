@@ -14,7 +14,7 @@
 ```bash
 brew install gh            # GitHub CLI: lets Copilot open PRs
 gh auth login              # GitHub.com → HTTPS → login with browser
-pip3 install pyyaml        # used by tools/build_synapse.py
+./tools/build.sh validate  # first run creates .venv and installs requirements.txt
 ```
 
 ## 5.4 Connect this folder to the repo

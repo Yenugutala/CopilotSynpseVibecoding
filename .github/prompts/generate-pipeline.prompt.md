@@ -24,7 +24,9 @@ Follow [copilot-instructions.md](../copilot-instructions.md) and these skills:
 4. **Bronze:** for each source spec, write `sql/bronze/NN_<table>.sql`.
 5. **Silver:** for each source spec, write `sql/silver/NN_<table>.sql` with the 5-batch pattern and one `CASE` per DQ rule.
 6. **Gold:** for each model spec, write `sql/gold/NN_<model>.sql`.
-7. **Build:** run `python3 tools/build_synapse.py validate`, then `python3 tools/build_synapse.py build`, then `python3 tools/build_synapse.py check`. If any of them fail, fix the SQL or spec and run all three again. Never edit `synapse/` JSON.
+7. **Build:** run `./tools/build.sh validate`, then `./tools/build.sh build`, then `./tools/build.sh check`.
+   - If any of them fail, read the error, fix the SQL (or tell me if the spec is wrong), and run all three again, up to 3 rounds.
+   - Never edit `synapse/` JSON. Never run `pip` or install anything.
 8. **Self-review** against [review-pipeline.prompt.md](review-pipeline.prompt.md) and fix anything it finds.
 9. **Ship** with the git-pr-workflow skill: branch `feat/<use_case>-pipeline`. Show me the staged file list and wait for my OK, then commit, push and open the PR.
 10. **Report back** with:

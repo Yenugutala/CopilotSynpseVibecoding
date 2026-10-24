@@ -24,8 +24,8 @@
 ```
 
 ## Checklist
-- [ ] `python3 tools/build_synapse.py validate` passes
-- [ ] `python3 tools/build_synapse.py check` passes (the `synapse/` JSON was regenerated, not hand-edited)
+- [ ] `./tools/build.sh validate` passes
+- [ ] `./tools/build.sh check` passes (the `synapse/` JSON was regenerated, not hand-edited)
 - [ ] No secrets, keys or hard-coded environment names
 - [ ] Every script is safe to re-run (guarded drops, `CREATE OR ALTER`, `run_id` folders)
 - [ ] Docs updated if the flow changed

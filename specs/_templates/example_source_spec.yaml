@@ -1,0 +1,95 @@
+# FILLED EXAMPLE of a source spec, for a hypothetical products.csv (not a real source in this repo).
+# Copy the STYLE and STRUCTURE, never the names. Not read by the build (only specs/sources/*.yaml are).
+#
+# Sample rows this was written from:
+#   product_id,product_code,product_name,category,unit_price,stock_qty,status,supplier_id,launch_date
+#   501,PRD-0001,Desk Lamp,Lighting,24.99,120,ACTIVE,11,2025-01-10
+#   502,PRD-0002,Office Chair,Furniture,149.00,35,ACTIVE,12,2025-02-01
+#   ,PRD-0003,Bookshelf,Furniture,89.50,10,ACTIVE,12,2025-02-15        <- bad: missing id
+#   504,PRD04,Floor Lamp,Lighting,-5.00,0,ACTV,99,2025-02-30           <- bad: code, price, status, date
+table: products
+description: Product catalogue exported nightly from the inventory system.
+source_file: products.csv
+format:
+  delimiter: ","
+  header: true
+  encoding: UTF-8
+business_key: [product_id]
+
+columns:
+  - name: product_id
+    type: INT
+    nullable: false                  # a key is never nullable, even if a sample row is empty (that row is a reject)
+    description: Unique product identifier.
+  - name: product_code
+    type: VARCHAR(20)
+    nullable: false
+    description: Product code in the format PRD-NNNN.
+  - name: product_name
+    type: VARCHAR(150)
+    nullable: false
+    description: Display name of the product.
+  - name: category
+    type: VARCHAR(50)
+    nullable: true
+    description: Product category. TODO confirm the full list of categories.
+  - name: unit_price
+    type: DECIMAL(10,2)              # money -> DECIMAL, never float
+    nullable: false
+    description: List price per unit in USD.
+  - name: stock_qty
+    type: INT
+    nullable: false
+    description: Units currently in stock.
+  - name: status
+    type: VARCHAR(20)
+    nullable: false
+    description: Lifecycle status of the product.
+  - name: supplier_id
+    type: INT
+    nullable: true
+    description: Supplier of the product. References suppliers.supplier_id.
+  - name: launch_date
+    type: DATE
+    nullable: false
+    description: Date the product went on sale (YYYY-MM-DD).
+
+dq_rules:                            # every rule has name, column, check, action
+  - name: product_id_not_null
+    column: product_id
+    check: not_null
+    action: reject
+  - name: product_code_format        # format of a text value -> regex (T-SQL LIKE pattern), never valid_type
+    column: product_code
+    check: regex
+    pattern: "PRD-[0-9][0-9][0-9][0-9]"
+    action: reject
+  - name: unit_price_valid           # numbers and dates -> valid_type (TRY_CAST must succeed)
+    column: unit_price
+    check: valid_type
+    action: reject
+  - name: unit_price_min
+    column: unit_price
+    check: min_value
+    value: 0
+    action: reject
+  - name: stock_qty_min
+    column: stock_qty
+    check: min_value
+    value: 0
+    action: reject
+  - name: status_allowed             # list ONLY values that look valid; 'ACTV' in the sample is a typo, not a value
+    column: status
+    check: allowed_values
+    values: [ACTIVE, DISCONTINUED]   # TODO confirm: DISCONTINUED not in sample, added from the business definition
+    action: reject
+  - name: launch_date_valid
+    column: launch_date
+    check: valid_type
+    action: reject
+  - name: supplier_exists            # link to another spec's key -> references; warn keeps the row
+    column: supplier_id
+    check: references
+    ref_table: suppliers
+    ref_column: supplier_id
+    action: warn

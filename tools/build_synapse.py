@@ -4,10 +4,10 @@
 Copilot writes readable SQL in sql/<layer>/*.sql. This script turns it into the JSON
 files Synapse Studio reads from Git (synapse/), so nobody hand-edits pipeline JSON.
 
-Usage:
-    python3 tools/build_synapse.py validate   # check specs + SQL conventions
-    python3 tools/build_synapse.py build      # (re)write synapse/**/*.json
-    python3 tools/build_synapse.py check      # CI: fail if synapse/ is out of date
+Usage (always through the wrapper, which manages .venv):
+    ./tools/build.sh validate   # check specs + SQL conventions
+    ./tools/build.sh build      # (re)write synapse/**/*.json
+    ./tools/build.sh check      # CI: fail if synapse/ is out of date
 
 Pipeline produced (pl_<use_case>):
     copy_<table>_landing_to_raw   (one per source spec, run in parallel)
@@ -22,13 +22,31 @@ SQL conventions handled here:
                                -> literal values from config/environment.yaml
 """
 import json
+import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
-import yaml
-
 ROOT = Path(__file__).resolve().parent.parent
+
+try:
+    import yaml
+except ImportError:
+    # Started with an interpreter that lacks PyYAML (for example Homebrew python3).
+    # Re-run inside the project's .venv, creating it on first use.
+    venv_python = ROOT / ".venv" / "bin" / "python3"
+    if os.environ.get("BUILD_SYNAPSE_BOOTSTRAPPED"):
+        sys.exit("PyYAML is still missing in .venv. Run: ./tools/build.sh validate")
+    if not venv_python.exists():
+        print("Creating project environment in .venv (first run only)...", flush=True)
+        subprocess.check_call([sys.executable, "-m", "venv", str(ROOT / ".venv")])
+    if subprocess.call([str(venv_python), "-c", "import yaml"], stderr=subprocess.DEVNULL) != 0:
+        print("Installing requirements.txt into .venv (first run only)...", flush=True)
+        subprocess.check_call([str(venv_python), "-m", "pip", "install", "--quiet",
+                               "--disable-pip-version-check", "-r", str(ROOT / "requirements.txt")])
+    os.environ["BUILD_SYNAPSE_BOOTSTRAPPED"] = "1"
+    os.execv(str(venv_python), [str(venv_python), str(Path(__file__).resolve())] + sys.argv[1:])
 CONFIG_FILE = ROOT / "config" / "environment.yaml"
 SOURCES_DIR = ROOT / "specs" / "sources"
 MODELS_DIR = ROOT / "specs" / "models"
@@ -39,6 +57,14 @@ LAYERS = ["00_setup", "bronze", "silver", "gold"]
 ALLOWED_TYPES = re.compile(r"^(INT|BIGINT|SMALLINT|BIT|DATE|DATETIME2|VARCHAR\(\d+\)|DECIMAL\(\d+,\d+\))$")
 ALLOWED_CHECKS = {"not_null", "regex", "valid_type", "max_length", "min_value",
                   "allowed_values", "references", "unique"}
+TYPE_HINT = "INT, BIGINT, SMALLINT, BIT, DATE, DATETIME2, VARCHAR(n), DECIMAL(p,s)"
+CHECK_PARAMS = {
+    "regex": ("pattern",),
+    "max_length": ("value",),
+    "min_value": ("value",),
+    "allowed_values": ("values",),
+    "references": ("ref_table", "ref_column"),
+}
 GO_LINE = re.compile(r"^\s*GO\s*;?\s*$", re.IGNORECASE | re.MULTILINE)
 TARGET_DB = re.compile(r"^\s*--\s*target_db:\s*(\w+)", re.IGNORECASE)
 FORBIDDEN_SQL = [
@@ -55,14 +81,31 @@ RUNTIME_TOKENS = {
 IR_REF = {"referenceName": "AutoResolveIntegrationRuntime", "type": "IntegrationRuntimeReference"}
 
 
+PARSE_ERRORS = []
+
+
 def load_yaml(path):
-    with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    """Load a YAML file. Syntax errors are collected in PARSE_ERRORS instead of crashing."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except yaml.YAMLError as exc:
+        mark = getattr(exc, "problem_mark", None)
+        where = " at line {}".format(mark.line + 1) if mark else ""
+        PARSE_ERRORS.append(
+            "{}: invalid YAML{} ({}). Put values that contain ': ' or '#' in double quotes, "
+            "e.g. description: \"Customer id (TODO confirm)\"".format(
+                path.relative_to(ROOT), where, getattr(exc, "problem", exc)))
+        return {"_parse_error": True}
 
 
 def load_all():
     config = load_yaml(CONFIG_FILE)
-    sources = [load_yaml(p) for p in sorted(SOURCES_DIR.glob("*.yaml"))]
+    sources = []
+    for path in sorted(SOURCES_DIR.glob("*.yaml")):
+        spec = load_yaml(path)
+        spec["_file"] = path.stem
+        sources.append(spec)
     models = [load_yaml(p) for p in sorted(MODELS_DIR.glob("*.yaml"))]
     return config, sources, models
 
@@ -77,39 +120,69 @@ def sql_files():
 # ---------------------------------------------------------------- validation
 
 def validate(config, sources, models):
-    errors = []
+    errors = list(PARSE_ERRORS)
     tables = set()
     for spec in sources:
+        if spec.get("_parse_error"):
+            continue  # only the YAML syntax error is useful until the file parses
         name = spec.get("table", "<missing table>")
-        for key in ("table", "description", "source_file", "business_key", "columns"):
+        if name != spec["_file"]:
+            errors.append("specs/sources/{}.yaml: 'table' is '{}' but must equal the file name '{}'".format(
+                spec["_file"], name, spec["_file"]))
+        for key in ("table", "description", "source_file", "format", "business_key", "columns", "dq_rules"):
             if not spec.get(key):
-                errors.append("specs/sources/{}: missing '{}'".format(name, key))
+                errors.append("specs/sources/{}: missing '{}' (see specs/_templates/source_spec.template.yaml)".format(name, key))
         if not str(spec.get("source_file", "")).endswith(".csv"):
-            errors.append("specs/sources/{}: source_file must be a .csv".format(name))
+            errors.append("specs/sources/{}: source_file must be the CSV file name, e.g. {}.csv".format(name, name))
         cols = {}
         for col in spec.get("columns") or []:
             cname = col.get("name", "")
             if not re.match(r"^[a-z][a-z0-9_]*$", cname):
                 errors.append("{}.{}: column names must be snake_case".format(name, cname))
             if not ALLOWED_TYPES.match(str(col.get("type", ""))):
-                errors.append("{}.{}: unsupported type '{}'".format(name, cname, col.get("type")))
+                errors.append("{}.{}: unsupported type '{}'; use one of {}".format(name, cname, col.get("type"), TYPE_HINT))
+            if not isinstance(col.get("nullable"), bool):
+                errors.append("{}.{}: 'nullable' must be true or false".format(name, cname))
             if not col.get("description"):
                 errors.append("{}.{}: missing description".format(name, cname))
             cols[cname] = col
         for key in spec.get("business_key") or []:
             if key not in cols:
                 errors.append("{}: business_key '{}' is not a column".format(name, key))
+            elif cols[key].get("nullable") is not False:
+                errors.append("{}.{}: business key columns must be nullable: false (add a not_null rule instead)".format(name, key))
         for rule in spec.get("dq_rules") or []:
-            if rule.get("check") not in ALLOWED_CHECKS:
-                errors.append("{}: rule '{}' has unknown check '{}'".format(name, rule.get("name"), rule.get("check")))
+            rname = rule.get("name") or "<unnamed rule on {}>".format(rule.get("column"))
+            check = rule.get("check")
+            if not rule.get("name"):
+                errors.append("{}: {} needs a 'name' like <column>_<check>".format(name, rname))
+            if "rule" in rule:
+                errors.append("{}: rule '{}' uses 'rule:'; the key is 'check:'".format(name, rname))
+            if check not in ALLOWED_CHECKS:
+                errors.append("{}: rule '{}' has unknown check '{}'; use one of {}".format(
+                    name, rname, check, ", ".join(sorted(ALLOWED_CHECKS))))
+            for param in CHECK_PARAMS.get(check, ()):
+                if rule.get(param) in (None, "", []):
+                    errors.append("{}: rule '{}' (check {}) needs '{}'".format(name, rname, check, param))
             if rule.get("column") not in cols:
-                errors.append("{}: rule '{}' column '{}' not found".format(name, rule.get("name"), rule.get("column")))
+                errors.append("{}: rule '{}' column '{}' not found".format(name, rname, rule.get("column")))
             if rule.get("action") not in ("reject", "warn"):
-                errors.append("{}: rule '{}' action must be reject or warn".format(name, rule.get("name")))
+                errors.append("{}: rule '{}' needs action: reject or action: warn".format(name, rname))
         tables.add(name)
 
     for model in models:
+        if model.get("_parse_error"):
+            continue
         mname = model.get("model", "<missing model>")
+        for key in ("model", "layer", "description", "grain", "sources", "join", "columns"):
+            if not model.get(key):
+                errors.append("specs/models/{}: missing '{}'".format(mname, key))
+        if model.get("layer") not in (None, "gold"):
+            errors.append("specs/models/{}: layer must be 'gold'".format(mname))
+        for col in model.get("columns") or []:
+            for key in ("name", "expression", "description"):
+                if not col.get(key):
+                    errors.append("specs/models/{}: column '{}' missing '{}'".format(mname, col.get("name", "?"), key))
         for src in model.get("sources") or []:
             schema, _, table = src.partition(".")
             if schema != "silver" or table not in tables:
@@ -345,7 +418,7 @@ def main(argv):
         stale = [p for p, content in rendered.items()
                  if not (OUT_DIR / p).exists() or (OUT_DIR / p).read_text(encoding="utf-8") != content]
         if stale:
-            print("synapse/ is out of date. Run: python3 tools/build_synapse.py build")
+            print("synapse/ is out of date. Run: ./tools/build.sh build")
             for p in stale:
                 print("  - synapse/" + p)
             return 1
