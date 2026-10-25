@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Demo: ask GitHub Copilot (VS Code, Agent mode) to generate all specs, SQL and the
-# Synapse pipeline in one run, then commit and push on a non-main branch.
+# Synapse pipeline in one run, and commit them on your CURRENT LOCAL branch.
+# Nothing is pushed - push and open the PR to main yourself when you are ready.
 #
 # Run it from the VS Code terminal of the GithubCopilot_coding window:
-#   ./demo/generate.sh             # if on main, creates a demo/run-<timestamp> branch first
+#   ./demo/generate.sh             # current branch must not be main
 #   ./demo/generate.sh --force     # run even if generated files already exist
 #
 # Copilot uses the model selected in the chat (e.g. Claude Sonnet 5.5) and asks you to
@@ -24,12 +25,11 @@ fi
 # 1. Never work on main
 branch="$(git branch --show-current)"
 if [ "$branch" = "main" ]; then
-    git pull --quiet
-    branch="demo/run-$(date +%Y%m%d-%H%M)"
-    git switch --quiet -c "$branch"
-    echo "Created branch $branch"
+    echo "You are on main. Switch to (or create) a local branch first, e.g.:"
+    echo "  git switch -c demo/customer-orders"
+    exit 1
 fi
-echo "Working on branch: $branch"
+echo "Working on local branch: $branch"
 
 # 2. Start from a clean slate
 existing="$(find specs/sources specs/models sql -name '*.yaml' -o -name '*.sql' 2>/dev/null | grep -v '/_templates/' || true)"
@@ -53,5 +53,6 @@ cat <<'EOF'
 
 Copilot is now working in the VS Code Chat panel.
   - Click "Allow" / "Keep" when it asks to run a command or save a file.
-  - It finishes by committing and pushing this branch, ready for your PR to main.
+  - It finishes by committing on this local branch (no push).
+  - When you are ready:  git push -u origin HEAD   and open the PR to main.
 EOF
