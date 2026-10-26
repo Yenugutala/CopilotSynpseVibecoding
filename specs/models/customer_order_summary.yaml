@@ -1,0 +1,41 @@
+model: customer_order_summary
+layer: gold
+description: Per-customer order totals for sales and customer analysis, excluding cancelled orders.
+grain: one row per customer_id
+sources: [silver.customers, silver.orders]
+# LEFT JOIN keeps customers without orders. The cancelled filter sits in the ON clause so those customers are not dropped.
+join: silver.customers LEFT JOIN silver.orders ON orders.customer_id = customers.customer_id
+filters:
+  - orders.status <> 'CANCELLED'
+
+columns:
+  - name: customer_id
+    expression: customers.customer_id
+    description: Unique customer identifier.
+  - name: full_name
+    expression: customers.first_name + ' ' + customers.last_name
+    description: Customer first and last name joined with a space.
+  - name: email
+    expression: customers.email
+    description: Customer email address.
+  - name: country
+    expression: customers.country
+    description: Two-letter country code.
+  - name: signup_date
+    expression: customers.signup_date
+    description: Date the customer signed up.
+  - name: total_orders
+    expression: COUNT(DISTINCT orders.order_id)
+    description: Number of non-cancelled orders. 0 when the customer has none.
+  - name: total_quantity
+    expression: COALESCE(SUM(orders.quantity), 0)
+    description: Units across non-cancelled orders. 0 when the customer has none.
+  - name: total_revenue
+    expression: CAST(COALESCE(SUM(orders.quantity * orders.unit_price), 0) AS DECIMAL(18,2))
+    description: Sum of quantity times unit price for non-cancelled orders. 0 when the customer has none.
+  - name: first_order_date
+    expression: MIN(orders.order_date)
+    description: Date of the earliest non-cancelled order. NULL when the customer has none.
+  - name: last_order_date
+    expression: MAX(orders.order_date)
+    description: Date of the latest non-cancelled order. NULL when the customer has none.
