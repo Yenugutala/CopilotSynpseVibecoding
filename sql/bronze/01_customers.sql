@@ -20,10 +20,10 @@ FROM OPENROWSET(
         FIELDTERMINATOR = ','
      )
      WITH (
-        customer_id  VARCHAR(50),
-        first_name   VARCHAR(50),
-        last_name    VARCHAR(50),
-        email        VARCHAR(150),
-        country      VARCHAR(50),
-        signup_date  VARCHAR(50)
+        customer_id   VARCHAR(50),
+        first_name    VARCHAR(50),
+        last_name     VARCHAR(50),
+        email         VARCHAR(100),
+        country       VARCHAR(50),
+        signup_date   VARCHAR(50)
      ) AS r;

@@ -1,11 +1,12 @@
 table: orders
-description: Customer orders exported from the order system, one row per order line.
+description: Customer orders, one row per order line, exported from the order system.
 source_file: orders.csv
 format:
   delimiter: ","
   header: true
   encoding: UTF-8
-business_key: [order_id]               # order_id uniquely identifies an order
+# order_id is the only column that identifies an order; the file has one product per order.
+business_key: [order_id]
 
 columns:
   - name: order_id
@@ -14,7 +15,7 @@ columns:
     description: Unique order identifier.
   - name: customer_id
     type: INT
-    nullable: true
+    nullable: false
     description: Customer who placed the order. References customers.customer_id.
   - name: order_date
     type: DATE
@@ -22,16 +23,16 @@ columns:
     description: Date the order was placed (YYYY-MM-DD).
   - name: product
     type: VARCHAR(100)
-    nullable: true
+    nullable: false
     description: Name of the product ordered.
   - name: quantity
     type: INT
     nullable: false
-    description: Number of units ordered.
+    description: Number of units ordered. Must be at least 1.
   - name: unit_price
     type: DECIMAL(10,2)
     nullable: false
-    description: Price per unit.
+    description: Price per unit. Must not be negative.
   - name: status
     type: VARCHAR(20)
     nullable: false
@@ -42,26 +43,38 @@ dq_rules:
     column: order_id
     check: not_null
     action: reject
-  - name: customer_id_valid
-    column: customer_id
+  - name: order_id_valid
+    column: order_id
     check: valid_type
+    action: reject
+  - name: customer_id_not_null
+    column: customer_id
+    check: not_null
+    action: reject
+  - name: order_date_not_null
+    column: order_date
+    check: not_null
     action: reject
   - name: order_date_valid
     column: order_date
     check: valid_type
     action: reject
-  - name: quantity_valid
+  - name: product_not_null
+    column: product
+    check: not_null
+    action: reject
+  - name: quantity_not_null
     column: quantity
-    check: valid_type
+    check: not_null
     action: reject
   - name: quantity_min
     column: quantity
     check: min_value
     value: 1
     action: reject
-  - name: unit_price_valid
+  - name: unit_price_not_null
     column: unit_price
-    check: valid_type
+    check: not_null
     action: reject
   - name: unit_price_min
     column: unit_price

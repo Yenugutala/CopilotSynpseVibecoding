@@ -21,11 +21,11 @@ FROM OPENROWSET(
         FIELDTERMINATOR = ','
      )
      WITH (
-        order_id     VARCHAR(50),
-        customer_id  VARCHAR(50),
-        order_date   VARCHAR(50),
-        product      VARCHAR(100),
-        quantity     VARCHAR(50),
-        unit_price   VARCHAR(50),
-        status       VARCHAR(50)
+        order_id      VARCHAR(50),
+        customer_id   VARCHAR(50),
+        order_date    VARCHAR(50),
+        product       VARCHAR(100),
+        quantity      VARCHAR(50),
+        unit_price    VARCHAR(50),
+        status        VARCHAR(50)
      ) AS r;

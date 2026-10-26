@@ -1,4 +1,5 @@
 -- Generated from specs/sources/customers.yaml
+-- business_key: [customer_id]. No warn rules, so there is no _dq_warnings column.
 -- Silver = typed, trimmed, DQ-checked, de-duplicated Parquet in curated/silver/<table>/run_id=<id>/.
 -- Each pipeline run writes a NEW run_id folder, so CETAS never hits "folder not empty".
 
@@ -6,13 +7,14 @@
 CREATE OR ALTER VIEW silver.customers_checked AS
 WITH typed AS (
     SELECT
-        TRY_CAST(NULLIF(LTRIM(RTRIM(customer_id)), '') AS INT)   AS customer_id,
-        NULLIF(LTRIM(RTRIM(first_name)), '')                     AS first_name,
-        NULLIF(LTRIM(RTRIM(last_name)), '')                      AS last_name,
-        LOWER(NULLIF(LTRIM(RTRIM(email)), ''))                   AS email,
-        UPPER(NULLIF(LTRIM(RTRIM(country)), ''))                 AS country,
-        TRY_CAST(NULLIF(LTRIM(RTRIM(signup_date)), '') AS DATE)  AS signup_date,
-        NULLIF(LTRIM(RTRIM(signup_date)), '')                    AS signup_date_raw,
+        TRY_CAST(NULLIF(LTRIM(RTRIM(customer_id)), '') AS INT)  AS customer_id,
+        NULLIF(LTRIM(RTRIM(customer_id)), '')                   AS customer_id_raw,
+        NULLIF(LTRIM(RTRIM(first_name)), '')                    AS first_name,
+        NULLIF(LTRIM(RTRIM(last_name)), '')                     AS last_name,
+        LOWER(NULLIF(LTRIM(RTRIM(email)), ''))                  AS email,
+        UPPER(NULLIF(LTRIM(RTRIM(country)), ''))                AS country,
+        TRY_CAST(NULLIF(LTRIM(RTRIM(signup_date)), '') AS DATE) AS signup_date,
+        NULLIF(LTRIM(RTRIM(signup_date)), '')                   AS signup_date_raw,
         _source_file,
         _ingest_date
     FROM bronze.customers
@@ -20,10 +22,16 @@ WITH typed AS (
 SELECT
     t.*,
     -- reject rules: one CASE each, producing '<rule_name>;' when the row fails
-      CASE WHEN t.customer_id IS NULL                                          THEN 'customer_id_not_null;'  ELSE '' END
-    + CASE WHEN t.email IS NULL OR t.email NOT LIKE '%_@_%._%'                 THEN 'email_format;'          ELSE '' END
-    + CASE WHEN LEN(t.country) > 2                                             THEN 'country_max_length;'    ELSE '' END
-    + CASE WHEN t.signup_date IS NULL AND t.signup_date_raw IS NOT NULL        THEN 'signup_date_valid;'     ELSE '' END
+      CASE WHEN t.customer_id IS NULL                                      THEN 'customer_id_not_null;'   ELSE '' END
+    + CASE WHEN t.customer_id IS NULL AND t.customer_id_raw IS NOT NULL    THEN 'customer_id_valid;'      ELSE '' END
+    + CASE WHEN t.first_name IS NULL                                       THEN 'first_name_not_null;'    ELSE '' END
+    + CASE WHEN t.last_name IS NULL                                        THEN 'last_name_not_null;'     ELSE '' END
+    + CASE WHEN t.email IS NULL
+             OR t.email NOT LIKE '%_@_%._%'                                THEN 'email_format;'           ELSE '' END
+    + CASE WHEN LEN(t.country) > 2                                         THEN 'country_max_length;'     ELSE '' END
+    + CASE WHEN t.country IS NULL                                          THEN 'country_not_null;'       ELSE '' END
+    + CASE WHEN t.signup_date IS NULL                                      THEN 'signup_date_not_null;'   ELSE '' END
+    + CASE WHEN t.signup_date IS NULL AND t.signup_date_raw IS NOT NULL    THEN 'signup_date_valid;'      ELSE '' END
       AS _dq_failures
 FROM typed AS t;
 GO
