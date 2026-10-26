@@ -1,0 +1,54 @@
+table: customers
+description: Customer master list exported from the order system.
+source_file: customers.csv
+format:
+  delimiter: ","
+  header: true
+  encoding: UTF-8
+business_key: [customer_id]            # customer_id uniquely identifies a customer
+
+columns:
+  - name: customer_id
+    type: INT
+    nullable: false
+    description: Unique customer identifier.
+  - name: first_name
+    type: VARCHAR(50)
+    nullable: true
+    description: Customer first name.
+  - name: last_name
+    type: VARCHAR(50)
+    nullable: true
+    description: Customer last name.
+  - name: email
+    type: VARCHAR(150)
+    nullable: false
+    description: Customer email address.
+  - name: country
+    type: VARCHAR(2)
+    nullable: true
+    description: Two-letter country code. TODO confirm the code standard is ISO 3166-1 alpha-2.
+  - name: signup_date
+    type: DATE
+    nullable: false
+    description: Date the customer signed up (YYYY-MM-DD).
+
+dq_rules:
+  - name: customer_id_not_null
+    column: customer_id
+    check: not_null
+    action: reject
+  - name: email_format
+    column: email
+    check: regex
+    pattern: "%_@_%._%"
+    action: reject
+  - name: country_max_length
+    column: country
+    check: max_length
+    value: 2
+    action: reject
+  - name: signup_date_valid
+    column: signup_date
+    check: valid_type
+    action: reject

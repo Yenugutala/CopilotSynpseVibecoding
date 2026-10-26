@@ -1,0 +1,40 @@
+model: customer_order_summary
+layer: gold
+description: Per-customer order totals for sales and customer analysis, excluding cancelled orders.
+grain: one row per customer_id
+sources: [silver.customers, silver.orders]
+join: silver.customers LEFT JOIN silver.orders ON customer_id
+filters:
+  - orders.status <> 'CANCELLED'
+
+columns:
+  - name: customer_id
+    expression: customers.customer_id
+    description: Unique customer identifier.
+  - name: full_name
+    expression: CONCAT_WS(' ', customers.first_name, customers.last_name)
+    description: Customer first and last name joined with a space.
+  - name: email
+    expression: customers.email
+    description: Customer email address.
+  - name: country
+    expression: customers.country
+    description: Two-letter country code.
+  - name: signup_date
+    expression: customers.signup_date
+    description: Date the customer signed up.
+  - name: total_orders
+    expression: COUNT(orders.order_id)
+    description: Number of non-cancelled orders. 0 when the customer has no orders.
+  - name: total_quantity
+    expression: COALESCE(SUM(orders.quantity), 0)
+    description: Total units ordered. 0 when the customer has no orders.
+  - name: total_revenue
+    expression: COALESCE(SUM(orders.quantity * orders.unit_price), 0)
+    description: Sum of quantity x unit price. 0 when the customer has no orders.
+  - name: first_order_date
+    expression: MIN(orders.order_date)
+    description: Date of the earliest non-cancelled order. NULL when the customer has no orders.
+  - name: last_order_date
+    expression: MAX(orders.order_date)
+    description: Date of the latest non-cancelled order. NULL when the customer has no orders.

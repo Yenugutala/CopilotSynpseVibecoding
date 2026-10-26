@@ -1,0 +1,81 @@
+table: orders
+description: Customer orders exported from the order system, one row per order line.
+source_file: orders.csv
+format:
+  delimiter: ","
+  header: true
+  encoding: UTF-8
+business_key: [order_id]               # order_id uniquely identifies an order
+
+columns:
+  - name: order_id
+    type: INT
+    nullable: false
+    description: Unique order identifier.
+  - name: customer_id
+    type: INT
+    nullable: true
+    description: Customer who placed the order. References customers.customer_id.
+  - name: order_date
+    type: DATE
+    nullable: false
+    description: Date the order was placed (YYYY-MM-DD).
+  - name: product
+    type: VARCHAR(100)
+    nullable: true
+    description: Name of the product ordered.
+  - name: quantity
+    type: INT
+    nullable: false
+    description: Number of units ordered.
+  - name: unit_price
+    type: DECIMAL(10,2)
+    nullable: false
+    description: Price per unit.
+  - name: status
+    type: VARCHAR(20)
+    nullable: false
+    description: Order lifecycle status. TODO confirm the full list of statuses.
+
+dq_rules:
+  - name: order_id_not_null
+    column: order_id
+    check: not_null
+    action: reject
+  - name: customer_id_valid
+    column: customer_id
+    check: valid_type
+    action: reject
+  - name: order_date_valid
+    column: order_date
+    check: valid_type
+    action: reject
+  - name: quantity_valid
+    column: quantity
+    check: valid_type
+    action: reject
+  - name: quantity_min
+    column: quantity
+    check: min_value
+    value: 1
+    action: reject
+  - name: unit_price_valid
+    column: unit_price
+    check: valid_type
+    action: reject
+  - name: unit_price_min
+    column: unit_price
+    check: min_value
+    value: 0
+    action: reject
+  - name: status_allowed
+    column: status
+    check: allowed_values
+    values: [PLACED, SHIPPED, DELIVERED, CANCELLED, RETURNED]
+    action: reject
+  - name: customer_exists
+    column: customer_id
+    check: references
+    ref_table: customers
+    ref_column: customer_id
+    action: warn
