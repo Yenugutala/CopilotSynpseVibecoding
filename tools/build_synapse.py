@@ -412,7 +412,8 @@ def render(config, sources):
     for name, body in datasets().items():
         files["dataset/{}.json".format(name)] = body
     pl_name, pl_body = pipeline(config, sources)
-    files["pipeline/{}.json".format(pl_name)] = pl_body
+    if pl_body["properties"]["activities"]:  # no specs/SQL yet -> no pipeline (Synapse rejects empty ones)
+        files["pipeline/{}.json".format(pl_name)] = pl_body
     files["integrationRuntime/AutoResolveIntegrationRuntime.json"] = integration_runtime()
     # Built-in credential Synapse creates for the workspace managed identity. It must be in Git,
     # otherwise "Overwrite live mode" / Publish deletes it from the live workspace.
@@ -421,6 +422,19 @@ def render(config, sources):
         "properties": {"type": "ManagedIdentity"},
     }
     return {path: json.dumps(body, indent=4, ensure_ascii=False) + "\n" for path, body in files.items()}
+
+
+def generated_pipelines():
+    """Pipeline files this tool created earlier (annotated 'copilot-generated'), as paths under synapse/."""
+    found = []
+    for path in sorted((OUT_DIR / "pipeline").glob("*.json")):
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if "copilot-generated" in body.get("properties", {}).get("annotations", []):
+            found.append("pipeline/" + path.name)
+    return found
 
 
 def same_json(path, content):
@@ -455,8 +469,10 @@ def main(argv):
         return 0
 
     rendered = render(config, sources)
+    obsolete = [p for p in generated_pipelines() if p not in rendered]
     if command == "check":
         stale = [p for p, content in rendered.items() if not same_json(OUT_DIR / p, content)]
+        stale += ["{} (should be deleted)".format(p) for p in obsolete]
         if stale:
             print("synapse/ is out of date. Run: ./tools/build.sh build")
             for p in stale:
@@ -473,6 +489,9 @@ def main(argv):
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
         print("wrote synapse/" + path)
+    for path in obsolete:
+        (OUT_DIR / path).unlink()
+        print("deleted synapse/" + path)
     return 0
 
 
